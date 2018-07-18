@@ -1,1 +1,59 @@
-{"1": {"status": "todo", "member": "foo", "description": "\n[2018-01-01] created:", "title": "maintask", "type": "sample", "created": "2018-01-01", "due": "2018-12-31", "co-member": "", "2": {"status": "todo", "member": "foo", "description": "\n[2018-01-01] created:", "title": "subtask", "type": "sample", "created": "2018-01-01", "due": "2018-12-31", "co-member": "", "3": {"id": 3, "title": "subsubtask", "type": "sample", "member": "miki", "co-member": "", "created": "2018-01-01", "due": "2018-12-31", "open": "", "close": "", "description": "\n[2018-01-01] created:\n[2018-07-16] member changed from foo to miki", "status": "todo"}, "close": "", "open": "", "id": 2}, "close": "", "open": "", "id": 1}, "latestID": 3}
+{
+	"latestID": 4,
+	
+	"1": {
+		"id": 1,
+		"title": "maintask",
+		"type": "sample",
+		"member": "foo",
+		"co-member": "",
+		"created": "2018-01-01",
+		"due": "2018-12-31",
+		"open": "",
+		"close": "",
+		"description": "\n[2018-01-01] created:",
+		"status": "todo",
+	
+		"2": {
+			"id": 2,
+			"title": "subtask",
+			"type": "sample",
+			"member": "foo",
+			"co-member": "",
+			"created": "2018-01-01",
+			"due": "2018-12-31",
+			"open": "",
+			"close": "",
+			"description": "\n[2018-01-01] created:",
+			"status": "todo",
+	
+			"3": {
+				"id": 3,
+				"title": "subsubtask1",
+				"type": "sample",
+				"member": "foo",
+				"co-member": "",
+				"created": "2018-01-01",
+				"due": "2018-12-31",
+				"open": "",
+				"close": "",
+				"description": "\n[2018-01-01] created:",
+				"status": "todo"
+			},
+			"4": {
+				"id": 4,
+				"title": "subsubtask2",
+				"type": "sample",
+				"member": "foo",
+				"co-member": "",
+				"created": "2018-01-01",
+				"due": "2018-12-31",
+				"open": "",
+				"close": "",
+				"description": "\n[2018-01-01] created:",
+				"status": "todo"
+			}
+		}
+	}
+	
+	}
