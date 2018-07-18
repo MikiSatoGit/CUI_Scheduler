@@ -515,6 +515,10 @@ def updateAnyGanttJS(datalist):
 	txt_footer += "forthColumn.labels().hAlign(\"left\");\n"
 	txt_footer += "forthColumn.title(\"Member\");\n"
 	txt_footer += "forthColumn.labels().format(\"{%member}\");\n"
+	txt_footer += "chart.rowSelectedFill('#FFFFCC');\n"
+	txt_footer += "var tooltip = dataGrid.tooltip();\n"
+	txt_footer += "tooltip.format(\"{%description}\");\n"
+	txt_footer += "chart.getTimeline().elements().selected().fill('#CCFF99');\n"
 	txt_footer += "chart.container(\'container\');\n"
 	txt_footer += "chart.draw();\n"
 	txt_footer += "chart.fitAll();\n"
@@ -546,8 +550,6 @@ def CreateJSTaskList(datalist):
 				ret_txt = "\"children\": [{\n"
 				for i in range(0,child_size):
 					ret_txt += child_txt_list[i]
-#					if i != child_size-1:
-#						ret_txt += "},{\n"
 				ret_txt += "}]\n"
 				ret_txt_list.append(ret_txt)
 		ret_txt_list.append("},{\n")
@@ -590,8 +592,12 @@ def CreateJSTask(datalist):
 		ret_txt += "    \"actualStart\": \"" + datalist["due"] + "\",\n"
 	else:
 		ret_txt += "    \"actualStart\": \"" + datalist["open"] + "\",\n"
-	ret_txt += "    \"actualEnd\": \"" + datalist["due"] + "\"\n"
-	ret_txt += "},\n"
+	ret_txt += "    \"actualEnd\": \"" + datalist["due"] + "\",\n"
+	desc_txt = "    \"description\": \"" + datalist["description"]
+	desc_txt = desc_txt.replace("\n", "\\n")
+	desc_txt += "\"\n"
+	ret_txt += desc_txt
+	ret_txt += " },\n"
 	return ret_txt
 
 
@@ -636,7 +642,7 @@ if __name__ == '__main__':
 			print "# quit : exit application"
 
 		if command=="quit" or command=="exit":
-			quit()
+			sys.exit()
 
 		elif command=="key?":
 			print("id : ID of task")
