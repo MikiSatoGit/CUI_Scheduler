@@ -10,13 +10,14 @@ import copy
 
 class GlobalParameter(object):
 	def __init__(self):
-		self.g_jsonfile_path = "db_schedule.json"
-		self.g_json_file = open(self.g_jsonfile_path, "r")
-		self.g_json_obj = json.load( self.g_json_file, object_pairs_hook=OrderedDict )
-		self.g_json_file.close()
+		self.g_jsonfile_path = ""	#db_schedule.json"
+		self.g_json_file = ""		#open(self.g_jsonfile_path, "r")
+		self.g_json_obj = ""		#json.load( self.g_json_file, object_pairs_hook=OrderedDict )
 		self.g_keytype = ""
 		self.g_keyword = ""
 		self.g_latest_ID = 0
+		self.g_jsfile_path = ""		#schedule.js"
+		self.g_js_file = ""			#open(self.g_jsfile_path, "r")
 
 ##### Functions #####
 def Initialize():
@@ -25,9 +26,11 @@ def Initialize():
 	if os.path.exists("config.ini"):
 		config.read("./config.ini")
 		gp.g_jsonfile_path = config.get('DATABASE', 'dbfile')
+		gp.g_jsfile_path = config.get('DATABASE', 'jsfile')
 	else:
 		logger.info("[ERROR] Could not find:config.ini. Use default value.")
 	print("Datalist: %s" % gp.g_jsonfile_path)
+	print("JavaScript: %s" % gp.g_jsfile_path)
 
 	# read data
 	gp.g_json_file = open(gp.g_jsonfile_path, "r")
@@ -426,7 +429,7 @@ def subCheckDelay(today_date, **datalist):
 
 
 
-
+##### Test Sample for Drawing Gantt Chart #####
 def DrawPythonGantt():
 	# set font
 	gantt.define_font_attributes(
@@ -480,6 +483,122 @@ def DrawPythonGantt():
 	)
 
 
+def updateAnyGanttJS(datalist):
+	gp.g_js_file = open(gp.g_jsfile_path, "w")
+	txt_header = "var chart;\n"
+	txt_header += "anychart.onDocumentReady(function () {\n"
+	txt_header += "var json = {\n"
+	txt_header += "    \"gantt\": {\n"
+	txt_header += "        \"type\": \"project\",\n"
+	txt_header += "        \"controller\": {\n"
+	txt_header += "            \"treeData\": {\n"
+	txt_header += "                \"children\": [\n"
+	txt_header += "                    {\n"
+	gp.g_js_file.write(txt_header)
+
+	txt_body = CreateJSTaskList(datalist)
+	gp.g_js_file.write(txt_body)
+
+	txt_footer = "                    }\n"
+	txt_footer += "                ]\n"
+	txt_footer += "            }\n"
+	txt_footer += "        }\n"
+	txt_footer += "    }\n"
+	txt_footer += "};\n"
+	txt_footer += "chart = anychart.fromJson(json);\n"
+	txt_footer += "var dataGrid = chart.dataGrid();\n"
+	txt_footer += "var thirdColumn = dataGrid.column(2);\n"
+	txt_footer += "thirdColumn.labels().hAlign(\"left\");\n"
+	txt_footer += "thirdColumn.title(\"Type\");\n"
+	txt_footer += "thirdColumn.labels().format(\"{%type}\");\n"
+	txt_footer += "var forthColumn = dataGrid.column(3);\n"
+	txt_footer += "forthColumn.labels().hAlign(\"left\");\n"
+	txt_footer += "forthColumn.title(\"Member\");\n"
+	txt_footer += "forthColumn.labels().format(\"{%member}\");\n"
+	txt_footer += "chart.rowSelectedFill('#FFFFCC');\n"
+	txt_footer += "var tooltip = dataGrid.tooltip();\n"
+	txt_footer += "tooltip.format(\"{%description}\");\n"
+	txt_footer += "chart.getTimeline().elements().selected().fill('#CCFF99');\n"
+	txt_footer += "chart.container(\'container\');\n"
+	txt_footer += "chart.draw();\n"
+	txt_footer += "chart.fitAll();\n"
+	txt_footer += "});"
+
+	gp.g_js_file.write(txt_footer)
+
+	gp.g_js_file.close()
+	return
+
+def CreateJSTaskList(datalist):
+	out_txt = ""
+	ret_txt = ""
+	ret_txt_list = []
+	parent_txt = ""
+	child_txt_list = []
+	datalist = OrderedDict(datalist)
+	for key in datalist.keys():
+		if key == "latestID":
+			continue
+		if isinstance(datalist[key], dict):
+			parent_txt = CreateJSTask(datalist[key])
+			if parent_txt != "":
+				ret_txt_list.append(parent_txt)
+
+			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
+			child_size = len(child_txt_list)
+			if child_size != 0:
+				ret_txt = "\"children\": [{\n"
+				for i in range(0,child_size):
+					ret_txt += child_txt_list[i]
+				ret_txt += "}]\n"
+				ret_txt_list.append(ret_txt)
+		ret_txt_list.append("},{\n")
+
+	for tmp_txt in ret_txt_list:
+		out_txt += tmp_txt
+	out_txt = out_txt[:out_txt.rfind('},{')]
+	return out_txt
+
+def subCreateJSTaskList(**datalist):
+	ret_txt = ""
+	ret_txt_list = []
+	child_txt_list = []
+	for key in datalist.keys():
+		if key == "latestID":
+			continue
+		if isinstance(datalist[key], dict):
+			ret_txt = CreateJSTask(datalist[key])
+			ret_txt_list.append(ret_txt)
+			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
+			child_size = len(child_txt_list)
+			if child_size != 0:
+				ret_txt = "\"children\": [{\n"
+				for i in range(0,child_size):
+					ret_txt += child_txt_list[i]
+					if i != child_size-1:
+						ret_txt += "},{\n"
+				ret_txt += "}]\n"
+				ret_txt_list.append(ret_txt)
+	return ret_txt_list
+
+def CreateJSTask(datalist):
+	ret_txt = ""
+	ret_txt += "\"treeDataItemData\": {\n"
+	ret_txt += "    \"id\":" + str(datalist["id"]) + ",\n"
+	ret_txt += "    \"name\": \"[" +str(datalist["id"]) + "] " + datalist["title"] + "\",\n"
+	ret_txt += "    \"type\": \"" + datalist["type"] + "\",\n"
+	ret_txt += "    \"member\": \"" + datalist["member"] + "\",\n"
+	if datalist["open"]=="":
+		ret_txt += "    \"actualStart\": \"" + datalist["due"] + "\",\n"
+	else:
+		ret_txt += "    \"actualStart\": \"" + datalist["open"] + "\",\n"
+	ret_txt += "    \"actualEnd\": \"" + datalist["due"] + "\",\n"
+	desc_txt = "    \"description\": \"" + datalist["description"]
+	desc_txt = desc_txt.replace("\n", "\\n")
+	desc_txt += "\"\n"
+	ret_txt += desc_txt
+	ret_txt += " },\n"
+	return ret_txt
 
 
 #################### Main Process ####################
@@ -523,7 +642,7 @@ if __name__ == '__main__':
 			print "# quit : exit application"
 
 		if command=="quit" or command=="exit":
-			quit()
+			sys.exit()
 
 		elif command=="key?":
 			print("id : ID of task")
@@ -825,6 +944,7 @@ if __name__ == '__main__':
 			print UpdateLatestID(gp.g_json_obj)
 
 		elif command=="chart":
-			DrawPythonGantt()
+#			DrawPythonGantt()
+			updateAnyGanttJS(gp.g_json_obj)
 
 		sleep(0.02)
