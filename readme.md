@@ -62,3 +62,14 @@ Each task consists of the following information.
 #### Gannt Chart
 Gannt Chart is shown on your browser by "chart" command.
 ![sample-chart](sample_chart.jpg)   
+
+Description of each task can be seen during a mouse over the task name.    
+
+---
+#### Configuration
+Task DB file and JavaScript file for Gantt Chart can be specified in "config.ini" respectively in case of shraing Task List with other team members.    
+
+```
+dbfile = ./db/db_schedule.json
+jsfile = ./js/schedule.js
+```
