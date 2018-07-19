@@ -31,11 +31,11 @@ var json = {
     "id":3,
     "name": "[3] subsubtask1",
     "type": "sample",
-    "member": "miki",
+    "member": "foo",
     "actualStart": "2018-01-01",
     "actualEnd": "2018-03-31",
-    "progressValue": "45%",
-    "description": "\n[2018-01-01] created:\n[2018-01-01] status changed to open\n[2018-07-19] progress changed from 50% to 30%\n[2018-07-19] progress changed from 30% to 45%\n[2018-07-19] member changed from foo to miki"
+    "progressValue": "50%",
+    "description": "\n[2018-01-01] created:\n[2018-01-01] status changed to open"
  },
 },{
 "treeDataItemData": {

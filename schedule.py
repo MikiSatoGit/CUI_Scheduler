@@ -19,8 +19,7 @@ from time import sleep
 import gantt
 import copy
 import webbrowser
-from selenium import webdriver
-import re
+#TEST		from selenium import webdriver
 
 class GlobalParameter(object):
 	def __init__(self):
@@ -32,12 +31,70 @@ class GlobalParameter(object):
 		self.g_latest_ID = 0
 		self.g_jsfile_path = ""		#schedule.js"
 		self.g_js_file = ""			#open(self.g_jsfile_path, "r")
+		self.g_jsonlock_path = ""
+		self.g_jslock_path = ""
 #TEST	self.g_web_driver = webdriver.Chrome("./opt/chromedriver.exe")
 #TEST	self.g_web_driver = webdriver.Ie("./opt/IEDriverServer.exe")
 #TEST	local_path = os.path.dirname(os.path.abspath(__file__))
 #TEST	self.g_url = "file:///" + local_path + "/schedule.html"
 
 ##### Functions #####
+def IsLockDB():
+	ret = False
+	if os.path.exists(gp.g_jsonlock_path):
+		ret = True
+	return ret
+
+def LockDB():
+	count = 0
+	while IsLockDB():
+		sleep(0.01)
+		count += 1
+		print("."),
+		if count > 10:
+			print("Someone updating DB file. Please try again later.")
+			break
+	with open(gp.g_jsonlock_path, mode='w') as f:
+		f.write(datetime.datetime.now().strftime("%Y-%m-%d %X")) 
+		f.close()
+
+def UnlockDB():
+	if os.path.exists(gp.g_jsonlock_path):
+		os.remove(gp.g_jsonlock_path)
+
+def UpdateDB():
+	# Lock DB file
+	LockDB()
+	# write data
+	gp.g_json_file = open(gp.g_jsonfile_path, "w")
+	json.dump(gp.g_json_obj, gp.g_json_file)
+	gp.g_json_file.close()
+	# Unlock DB file
+	UnlockDB()
+
+def IsLockJS():
+	ret = False
+	if os.path.exists(gp.g_jslock_path):
+		ret = True
+	return ret
+
+def LockJS():
+	count = 0
+	while IsLockJS():
+		sleep(0.01)
+		count += 1
+		print("."),
+		if count > 10:
+			print("Someone updating Chart file. Please try again later.")
+			break
+	with open(gp.g_jslock_path, mode='w') as f:
+		f.write(datetime.datetime.now().strftime("%Y-%m-%d %X")) 
+		f.close()
+
+def UnlockJS():
+	if os.path.exists(gp.g_jslock_path):
+		os.remove(gp.g_jslock_path)
+
 def Initialize():
 	# read ini
 	config = ConfigParser.SafeConfigParser()
@@ -48,9 +105,18 @@ def Initialize():
 	else:
 		logger.info("[ERROR] Could not find:config.ini. Use default value.")
 	print("Datalist: %s" % gp.g_jsonfile_path)
-	print("JavaScript: %s" % gp.g_jsfile_path)
 
+	gp.g_jsonlock_path = gp.g_jsonfile_path[:gp.g_jsonfile_path.rfind("/")]
+	gp.g_jsonlock_path += "/.lock"
+	gp.g_jslock_path = gp.g_jsfile_path[:gp.g_jsfile_path.rfind("/")]
+	gp.g_jslock_path += "/.lock"
 	# read data
+	if not os.path.exists(gp.g_jsonfile_path):
+		with open(gp.g_jsonfile_path, mode='w') as f:
+			f.write("{\"latestID\": 0}") 
+			print("created new DB file")
+			f.close()
+
 	gp.g_json_file = open(gp.g_jsonfile_path, "r")
 	gp.g_json_obj = json.load( gp.g_json_file, object_pairs_hook=OrderedDict )
 	gp.g_json_file.close()
@@ -149,12 +215,14 @@ def subUpdateLatestID(**datalist):
 	return max_id
 
 def GetNewID(datalist):
+	LockDB()
 	new_id = gp.g_json_obj["latestID"] + 1 
 	gp.g_json_obj["latestID"] = new_id
 	gp.g_json_file = open(gp.g_jsonfile_path, "w")
 	json.dump(gp.g_json_obj, gp.g_json_file)
 	gp.g_json_file.close()
 	gp.g_latest_ID = gp.g_json_obj["latestID"]
+	UnlockDB()
 	return new_id
 
 def GetTaskID(taskname, datalist):
@@ -488,6 +556,7 @@ def DrawPythonGantt():
 
 
 def updateAnyGanttJS(datalist):
+	LockJS()
 	gp.g_js_file = open(gp.g_jsfile_path, "w")
 	txt_header = "var chart;\n"
 	txt_header += "anychart.onDocumentReady(function () {\n"
@@ -531,6 +600,7 @@ def updateAnyGanttJS(datalist):
 	gp.g_js_file.write(txt_footer)
 
 	gp.g_js_file.close()
+	UnlockJS()
 	return
 
 def CreateJSTaskList(datalist):
@@ -647,7 +717,6 @@ if __name__ == '__main__':
 			print "# search : search task by keyword"
 			print "# mytask : show tasks for the specified member"
 			print "# delay? : check delayed task"
-#DEBUG		print "# latestid : show latest task ID"
 			print "# quit : exit application"
 
 		if command=="quit" or command=="exit":
@@ -685,10 +754,14 @@ if __name__ == '__main__':
 				print("[%s]" % tmp_type)
 
 		elif command=="all":
+			LockDB()
 			ShowAllTasks( gp.g_json_obj)
+			UnlockDB()
 
 		elif command=="list":
+			LockDB()
 			ShowTaskList(gp.g_json_obj)
+			UnlockDB()
 
 		elif command=="add":
 			print "[add] Task name?"
@@ -702,18 +775,13 @@ if __name__ == '__main__':
 			due_date = due_date.replace("/","-")
 			print "[add] Any description?"
 			description = raw_input("[add] >> ")
-
+			# Create New ID
 			new_ID = GetNewID(gp.g_json_obj)
-			new_data = CreateNewTask( new_ID, task_name, type_name, member_name, due_date)
-
 			# add new element
+			new_data = CreateNewTask( new_ID, task_name, type_name, member_name, due_date)
 			gp.g_json_obj.update(new_data)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
-
+			UpdateDB()
 
 		elif command=="sub":
 			print "[sub] Parent task name?"
@@ -723,7 +791,6 @@ if __name__ == '__main__':
 			if parent_task_name == str(0):
 				print("Parent task does not exist.")
 				continue
-
 			print "[sub] Sub task name?"
 			task_name = raw_input("[sub] >> ")
 			print "[sub] Whose task?"
@@ -733,7 +800,6 @@ if __name__ == '__main__':
 			due_date = due_date.replace("/","-")
 			print "[sub] Any description?"
 			description = raw_input("[sub] >> ")
-
 			# check Task ID layer
 			gp.g_keyword = parent_task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
@@ -746,16 +812,13 @@ if __name__ == '__main__':
 				tmp_datalist = tmp_datalist[str(tmp_ret_id[-1])]
 				tmp_ret_id.pop()
 			type_name = tmp_datalist[str(tmp_ret_id[-1])]["type"]
-
-			# add new element
+			# Create New ID
 			new_ID = GetNewID(gp.g_json_obj)
+			# add new element
 			new_task = CreateNewTask( new_ID, task_name, type_name, member_name, due_date)
 			gp.g_json_obj = AddSubTask(new_task, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="del":
 			print "[del] Task name?"
@@ -765,19 +828,14 @@ if __name__ == '__main__':
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# delete item
 			gp.g_json_obj = DeleteTask(ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="open":
 			print "[open] Task name?"
@@ -790,19 +848,14 @@ if __name__ == '__main__':
 			print "[open] Date? (YYYY-MM-DD default:today)"
 			new_date = raw_input("[open] >> ")
 			new_date = new_date.replace("/","-")
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update status
 			gp.g_json_obj = ChangeStatus("open", new_date, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="close":
 			print "[close] Task name?"
@@ -815,19 +868,14 @@ if __name__ == '__main__':
 			print "[close] Date? (YYYY-MM-DD default:today)"
 			new_date = raw_input("[close] >> ")
 			new_date = new_date.replace("/","-")
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update status
 			gp.g_json_obj = ChangeStatus("close", new_date, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="pending":
 			print "[pending] Task name?"
@@ -837,20 +885,15 @@ if __name__ == '__main__':
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update status
 			new_date = ""
 			gp.g_json_obj = ChangeStatus("pending", new_date, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="progress":
 			print "[progress] Task name?"
@@ -865,19 +908,14 @@ if __name__ == '__main__':
 			new_progress = new_progress.replace("%","")
 			new_progress = new_progress + "%"
 			print new_progress
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update progress
 			gp.g_json_obj = ChangeItem("progress", new_progress, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="title":
 			print "[title] Current task name?"
@@ -889,19 +927,14 @@ if __name__ == '__main__':
 				continue
 			print "[title] New task name?"
 			new_task_name = raw_input("[title] >> ")
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update title
 			gp.g_json_obj = ChangeItem("title", new_task_name, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="member":
 			print "[member] Task name?"
@@ -913,19 +946,14 @@ if __name__ == '__main__':
 				continue
 			print "[member] Who?"
 			new_member = raw_input("[member] >> ")
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update member
 			gp.g_json_obj = ChangeItem("member", new_member, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="due":
 			print "[due] Task name?"
@@ -940,19 +968,14 @@ if __name__ == '__main__':
 			new_date = new_date.replace("/","-")
 			if new_date == "":
 				new_date = datetime.datetime.now().strftime("%Y-%m-%d") 
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update item
 			gp.g_json_obj = ChangeItem("due", new_date, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="note":
 			print "[note] Task name?"
@@ -964,51 +987,50 @@ if __name__ == '__main__':
 				continue
 			print "[note] Description?"
 			note_add = raw_input("[note] >> ")
-
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
-
 			# update description
 			gp.g_json_obj = ChangeNote(note_add, ret_id, **gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
+			UpdateDB()
 
 		elif command=="search":
 			print "[search] Keytype?"
 			gp.g_keytype = raw_input("[search] >> ")
 			print "[search] Keyword?"
 			gp.g_keyword = raw_input("[search] >> ")
-
 			# search item
+			LockDB()
 			ret_id = SearchKey(gp.g_json_obj)
+			UnlockDB()
 			gp.g_keytype = ""
 			gp.g_keyword = ""
 
 		elif command=="mytask":
 			print "[mytask] Member name?"
 			member_name = raw_input("[mytask] >> ")
+			LockDB()
 			SearchMytask(gp.g_json_obj, member_name)
+			UnockDB()
 
 		elif command=="delay?":
+			# Check due date
 			today = datetime.datetime.now().strftime("%Y-%m-%d") 
 			gp.g_json_obj = CheckDelay(today, gp.g_json_obj)
-
 			# write data
-			gp.g_json_file = open(gp.g_jsonfile_path, "w")
-			json.dump(gp.g_json_obj, gp.g_json_file)
-			gp.g_json_file.close()
-
-		elif command=="latestid":
-			print UpdateLatestID(gp.g_json_obj)
+			UpdateDB()
 
 		elif command=="chart":
 			updateAnyGanttJS(gp.g_json_obj)
 #TEST		gp.g_web_driver.refresh()
 			webbrowser.open("schedule.html", new=1)
+
+
+		elif command=="test1":
+			LockJS()
+		elif command=="test2":
+			UnlockJS()
 
 		sleep(0.02)
