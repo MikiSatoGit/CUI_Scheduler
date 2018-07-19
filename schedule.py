@@ -1,3 +1,14 @@
+# coding: utf-8
+#
+#	schedule.py
+#	CUI Task Scheduler
+#	Create on: 2018.07.19
+#	Author   : Miki Sato <miki.sam.sato@gmail.com>
+#
+#	ARGUMENT:
+#	python schedule.py [None]
+#
+
 import sys
 import os.path
 import ConfigParser
@@ -7,6 +18,9 @@ import datetime
 from time import sleep
 import gantt
 import copy
+import webbrowser
+from selenium import webdriver
+import re
 
 class GlobalParameter(object):
 	def __init__(self):
@@ -18,6 +32,10 @@ class GlobalParameter(object):
 		self.g_latest_ID = 0
 		self.g_jsfile_path = ""		#schedule.js"
 		self.g_js_file = ""			#open(self.g_jsfile_path, "r")
+#TEST	self.g_web_driver = webdriver.Chrome("./opt/chromedriver.exe")
+#TEST	self.g_web_driver = webdriver.Ie("./opt/IEDriverServer.exe")
+#TEST	local_path = os.path.dirname(os.path.abspath(__file__))
+#TEST	self.g_url = "file:///" + local_path + "/schedule.html"
 
 ##### Functions #####
 def Initialize():
@@ -39,6 +57,7 @@ def Initialize():
 	gp.g_keytype = ""
 	gp.g_keyword = ""
 	gp.g_latest_ID =  gp.g_json_obj["latestID"]
+#TEST	gp.g_web_driver.get(gp.g_url)
 
 def ShowTask(datalist):
 	print("----------")
@@ -53,6 +72,7 @@ def ShowTask(datalist):
 	print(" close : %s" % ( datalist["close"] ) )
 	print(" description : %s" % ( datalist["description"] ) )
 	print(" status : %s" % ( datalist["status"] ) )
+	print(" progress : %s" % ( datalist["progress"] ) )
 
 def ShowTaskList(datalist):
 	datalist = OrderedDict(datalist)
@@ -139,14 +159,20 @@ def GetNewID(datalist):
 
 def GetTaskID(taskname, datalist):
 	ret_id = 0
-	gp.g_keyword = taskname
+	datalist = OrderedDict(datalist)
 	if  taskname.isdigit():
-		ret_id = taskname
+		gp.g_keytype = "id"
+		gp.g_keyword = taskname
 	else:
-		for key in datalist.keys():
-			if key == "latestID":
-				continue
+		gp.g_keytype = "title"
+		gp.g_keyword = taskname
+
+	for key in datalist.keys():
+		if key == "latestID":
+			continue
+		if isinstance(datalist[key], dict):
 			ret_id = subGetTaskID(**datalist[key])
+	gp.g_keytype = ""
 	gp.g_keyword = ""
 	return str(ret_id)
 
@@ -156,11 +182,13 @@ def subGetTaskID(**datalist):
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
-
-		if gp.g_keyword == datalist["title"]:
-			ret_id = datalist["id"]
 		if isinstance(datalist[key], dict):
 			ret_id = subGetTaskID(**datalist[key])
+			if ret_id != 0:
+				break
+		elif gp.g_keyword == str(datalist[gp.g_keytype]):
+			ret_id = datalist["id"]
+			break
 	return ret_id
 
 def CreateNewTask(id, title, type, member, due):
@@ -177,6 +205,7 @@ def CreateNewTask(id, title, type, member, due):
 	new_task["close"] = "" 
 	new_task["description"] = "\n[" + datetime.datetime.now().strftime("%Y-%m-%d") + "] " + "created:" + description 
 	new_task["status"] = "todo"
+	new_task["progress"] = "0%"
 
 	# add new element
 	new_data = OrderedDict()
@@ -201,18 +230,17 @@ def subSearchTaskbyID(**datalist):
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
-
 		if isinstance(datalist[key], dict):
 			tmp_id = subSearchTaskbyID(**datalist[key])
 			if len(tmp_id) != 0:
 				ret_id.extend(tmp_id)
 				ret_id.append(datalist["id"])
 		elif key == "id" and gp.g_keyword == str(datalist[key]):
-#			print("-----ID [%s] found" % gp.g_keyword)
 			ret_id.append(datalist["id"])
 	return ret_id
 
 def AddSubTask(new_task, task_id_order, **datalist):
+	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
 		tmp_task_id_order = task_id_order
@@ -226,6 +254,7 @@ def AddSubTask(new_task, task_id_order, **datalist):
 	return datalist
 
 def DeleteTask(task_id_order, **datalist):
+	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
 		tmp_task_id_order = task_id_order
@@ -271,7 +300,7 @@ def SearchMytask(datalist, member_name):
 	ret_id = []
 	gp.g_keytype = "member"
 	gp.g_keyword = member_name
-	print "----- as member"
+	print("---------- Task of %s" % member_name)
 	ret_id = SearchKey(datalist)
 
 #TBD	gp.g_keytype = "co-member"
@@ -282,6 +311,7 @@ def SearchMytask(datalist, member_name):
 	gp.g_keyword = ""
 
 def ChangeStatus(new_status, new_date, task_id_order, **datalist):
+	datalist = OrderedDict(datalist)
 	# set default date
 	if new_date == "":
 		new_date = datetime.datetime.now().strftime("%Y-%m-%d") 
@@ -315,10 +345,8 @@ def ChangeStatus(new_status, new_date, task_id_order, **datalist):
 			datalist[str(tmp_id)] = ChangeStatus(new_status, new_date, tmp_task_id_order, **datalist[str(tmp_id)])
 	return datalist
 
-def ChangeDue(new_date, task_id_order, **datalist):
-	# set default date
-	if new_date == "":
-		new_date = datetime.datetime.now().strftime("%Y-%m-%d") 
+def ChangeItem(updating_type, new_data, task_id_order, **datalist):
+	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
 		tmp_task_id_order = task_id_order
@@ -327,12 +355,12 @@ def ChangeDue(new_date, task_id_order, **datalist):
 			update_data = datalist[str(tmp_id)]
 
 			# update due
-			date_now = update_data["due"]
-			update_data["due"] = new_date
+			data_now = update_data[updating_type]
+			update_data[updating_type] = new_data
 
 			# update description
 			note_now = update_data["description"]
-			note_add = "due changed from %s to %s" % (date_now, new_date)
+			note_add = "%s changed from %s to %s" % (updating_type, data_now, new_data)
 			update_data["description"] = note_now + "\n[" + datetime.datetime.now().strftime("%Y-%m-%d") + "] " + note_add
 
 			# update element
@@ -340,35 +368,11 @@ def ChangeDue(new_date, task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = ChangeDue(new_date, tmp_task_id_order, **datalist[str(tmp_id)])
-	return datalist
-
-def ChangeMember(new_member, task_id_order, **datalist):
-	depth = len(task_id_order)
-	if depth != 0:
-		tmp_task_id_order = task_id_order
-		tmp_id = tmp_task_id_order[depth-1]
-		if depth ==1:
-			update_data = datalist[str(tmp_id)]
-
-			# update member
-			member_now = update_data["member"]
-			update_data["member"] = new_member
-
-			# update description
-			note_now = update_data["description"]
-			note_add = "member changed from %s to %s" % (member_now, new_member)
-			update_data["description"] = note_now + "\n[" + datetime.datetime.now().strftime("%Y-%m-%d") + "] " + note_add
-
-			# update element
-			datalist[str(tmp_id)].update(update_data)
-			return datalist
-		else:
-			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = ChangeMember(new_member, tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = ChangeItem(updating_type, new_data, tmp_task_id_order, **datalist[str(tmp_id)])
 	return datalist
 
 def ChangeNote(new_note, task_id_order, **datalist):
+	datalist = OrderedDict(datalist)
 	# set default date
 	if new_note == "":
 		return datalist
@@ -540,7 +544,7 @@ def CreateJSTaskList(datalist):
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			parent_txt = CreateJSTask(datalist[key])
+			parent_txt = CreateJSTask(datalist[key], )
 			if parent_txt != "":
 				ret_txt_list.append(parent_txt)
 
@@ -593,6 +597,8 @@ def CreateJSTask(datalist):
 	else:
 		ret_txt += "    \"actualStart\": \"" + datalist["open"] + "\",\n"
 	ret_txt += "    \"actualEnd\": \"" + datalist["due"] + "\",\n"
+	if datalist["progress"]!= "0%":
+		ret_txt += "    \"progressValue\": \"" + datalist["progress"] + "\",\n"
 	desc_txt = "    \"description\": \"" + datalist["description"]
 	desc_txt = desc_txt.replace("\n", "\\n")
 	desc_txt += "\"\n"
@@ -621,27 +627,31 @@ if __name__ == '__main__':
 
 		if command=="-h":
 			print "<COMMAND LIST>"
+			print "# -h : show command list"
 			print "# key? : show key of task item"
 			print "# type? : show available types of task"
-			print "# list : show title list"
 			print "# all : show all tasks"
+			print "# list : show title list"
 			print "# add : add main task"
 			print "# sub : add sub task"
 			print "# del : delete task"
-			print "# search : search task by keyword"
 			print "# open : set status as [doing] and set start date"
 			print "# close : set status as [done] and set completion date"
 			print "# pending : set status as [pending]"
-			print "# due : change due date"
+			print "# progress : change progress"
+			print "# title : change title"
 			print "# member : change member"
+			print "# due : change due date"
 			print "# note : add note in description."
-			print "# delay? : check delayed task"
-			print "# mytask : show open task list for the specified member"
 			print "# chart : create gannt chart"
-			print "# latestid : show latest task ID"
+			print "# search : search task by keyword"
+			print "# mytask : show tasks for the specified member"
+			print "# delay? : check delayed task"
+#DEBUG		print "# latestid : show latest task ID"
 			print "# quit : exit application"
 
 		if command=="quit" or command=="exit":
+#TEST		gp.g_web_driver.close()
 			sys.exit()
 
 		elif command=="key?":
@@ -654,8 +664,9 @@ if __name__ == '__main__':
 			print("due : due date")
 			print("open : start date")
 			print("close : completion date")
-			print("description : description")
+			print("description : description of task")
 			print("status : current status(todo, open, close, pending, delayed)")
+			print("progress : progress of task (%)")
 
 		elif command=="type?":
 			type_list = []
@@ -673,11 +684,11 @@ if __name__ == '__main__':
 			for tmp_type in type_list:
 				print("[%s]" % tmp_type)
 
-		elif command=="list":
-			ShowTaskList(gp.g_json_obj)
-
 		elif command=="all":
 			ShowAllTasks( gp.g_json_obj)
+
+		elif command=="list":
+			ShowTaskList(gp.g_json_obj)
 
 		elif command=="add":
 			print "[add] Task name?"
@@ -768,17 +779,6 @@ if __name__ == '__main__':
 			json.dump(gp.g_json_obj, gp.g_json_file)
 			gp.g_json_file.close()
 
-		elif command=="search":
-			print "[search] Keytype?"
-			gp.g_keytype = raw_input("[search] >> ")
-			print "[search] Keyword?"
-			gp.g_keyword = raw_input("[search] >> ")
-
-			# search item
-			ret_id = SearchKey(gp.g_json_obj)
-			gp.g_keytype = ""
-			gp.g_keyword = ""
-
 		elif command=="open":
 			print "[open] Task name?"
 			task_name = raw_input("[open] >> ")
@@ -803,7 +803,6 @@ if __name__ == '__main__':
 			gp.g_json_file = open(gp.g_jsonfile_path, "w")
 			json.dump(gp.g_json_obj, gp.g_json_file)
 			gp.g_json_file.close()
-
 
 		elif command=="close":
 			print "[close] Task name?"
@@ -853,25 +852,51 @@ if __name__ == '__main__':
 			json.dump(gp.g_json_obj, gp.g_json_file)
 			gp.g_json_file.close()
 
-		elif command=="due":
-			print "[due] Task name?"
-			task_name = raw_input("[due] >> ")
+		elif command=="progress":
+			print "[progress] Task name?"
+			task_name = raw_input("[progress] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[due] Date? (YYYY-MM-DD)"
-			new_date = raw_input("[due] >> ")
-			new_date = new_date.replace("/","-")
+			print "[progress] Progress [%] ?"
+			new_progress = raw_input("[progress] >> ")
+			new_progress = new_progress.replace("%","")
+			new_progress = new_progress + "%"
+			print new_progress
 
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 
-			# update due
-			gp.g_json_obj = ChangeDue(new_date, ret_id, **gp.g_json_obj)
+			# update progress
+			gp.g_json_obj = ChangeItem("progress", new_progress, ret_id, **gp.g_json_obj)
+
+			# write data
+			gp.g_json_file = open(gp.g_jsonfile_path, "w")
+			json.dump(gp.g_json_obj, gp.g_json_file)
+			gp.g_json_file.close()
+
+		elif command=="title":
+			print "[title] Current task name?"
+			task_name = raw_input("[title] >> ")
+			task_name = GetTaskID(task_name, gp.g_json_obj)
+			print("->Task ID: %s" % task_name)
+			if task_name == str(0):
+				print("Task does not exist.")
+				continue
+			print "[title] New task name?"
+			new_task_name = raw_input("[title] >> ")
+
+			# check Task ID layer
+			gp.g_keyword = task_name
+			ret_id = SearchTaskbyID(gp.g_json_obj)
+			gp.g_keyword = ""
+
+			# update title
+			gp.g_json_obj = ChangeItem("title", new_task_name, ret_id, **gp.g_json_obj)
 
 			# write data
 			gp.g_json_file = open(gp.g_jsonfile_path, "w")
@@ -894,8 +919,35 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 
-			# update due
-			gp.g_json_obj = ChangeMember(new_member, ret_id, **gp.g_json_obj)
+			# update member
+			gp.g_json_obj = ChangeItem("member", new_member, ret_id, **gp.g_json_obj)
+
+			# write data
+			gp.g_json_file = open(gp.g_jsonfile_path, "w")
+			json.dump(gp.g_json_obj, gp.g_json_file)
+			gp.g_json_file.close()
+
+		elif command=="due":
+			print "[due] Task name?"
+			task_name = raw_input("[due] >> ")
+			task_name = GetTaskID(task_name, gp.g_json_obj)
+			print("->Task ID: %s" % task_name)
+			if task_name == str(0):
+				print("Task does not exist.")
+				continue
+			print "[due] Date? (YYYY-MM-DD)"
+			new_date = raw_input("[due] >> ")
+			new_date = new_date.replace("/","-")
+			if new_date == "":
+				new_date = datetime.datetime.now().strftime("%Y-%m-%d") 
+
+			# check Task ID layer
+			gp.g_keyword = task_name
+			ret_id = SearchTaskbyID(gp.g_json_obj)
+			gp.g_keyword = ""
+
+			# update item
+			gp.g_json_obj = ChangeItem("due", new_date, ret_id, **gp.g_json_obj)
 
 			# write data
 			gp.g_json_file = open(gp.g_jsonfile_path, "w")
@@ -926,6 +978,22 @@ if __name__ == '__main__':
 			json.dump(gp.g_json_obj, gp.g_json_file)
 			gp.g_json_file.close()
 
+		elif command=="search":
+			print "[search] Keytype?"
+			gp.g_keytype = raw_input("[search] >> ")
+			print "[search] Keyword?"
+			gp.g_keyword = raw_input("[search] >> ")
+
+			# search item
+			ret_id = SearchKey(gp.g_json_obj)
+			gp.g_keytype = ""
+			gp.g_keyword = ""
+
+		elif command=="mytask":
+			print "[mytask] Member name?"
+			member_name = raw_input("[mytask] >> ")
+			SearchMytask(gp.g_json_obj, member_name)
+
 		elif command=="delay?":
 			today = datetime.datetime.now().strftime("%Y-%m-%d") 
 			gp.g_json_obj = CheckDelay(today, gp.g_json_obj)
@@ -935,16 +1003,12 @@ if __name__ == '__main__':
 			json.dump(gp.g_json_obj, gp.g_json_file)
 			gp.g_json_file.close()
 
-		elif command=="mytask":
-			print "[mytask] Member name?"
-			member_name = raw_input("[mytask] >> ")
-			SearchMytask(gp.g_json_obj, member_name)
-
 		elif command=="latestid":
 			print UpdateLatestID(gp.g_json_obj)
 
 		elif command=="chart":
-#			DrawPythonGantt()
 			updateAnyGanttJS(gp.g_json_obj)
+#TEST		gp.g_web_driver.refresh()
+			webbrowser.open("schedule.html", new=1)
 
 		sleep(0.02)
