@@ -240,6 +240,8 @@ def GetTaskID(taskname, datalist):
 			continue
 		if isinstance(datalist[key], dict):
 			ret_id = subGetTaskID(**datalist[key])
+			if ret_id != 0:
+				break
 	gp.g_keytype = ""
 	gp.g_keyword = ""
 	return str(ret_id)
