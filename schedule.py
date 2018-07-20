@@ -623,10 +623,15 @@ def CreateJSTaskList(datalist):
 			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
 			child_size = len(child_txt_list)
 			if child_size != 0:
-				ret_txt = "\"children\": [{\n"
+				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
+					ret_txt += "{"
 					ret_txt += child_txt_list[i]
-				ret_txt += "}]\n"
+					if i != child_size-1:
+						ret_txt += "},\n"
+					else:
+						ret_txt += "}\n"
+				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 		ret_txt_list.append("},{\n")
 
@@ -648,12 +653,15 @@ def subCreateJSTaskList(**datalist):
 			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
 			child_size = len(child_txt_list)
 			if child_size != 0:
-				ret_txt = "\"children\": [{\n"
+				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
+					ret_txt += "{"
 					ret_txt += child_txt_list[i]
 					if i != child_size-1:
-						ret_txt += "},{\n"
-				ret_txt += "}]\n"
+						ret_txt += "},\n"
+					else:
+						ret_txt += "}\n"
+				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 	return ret_txt_list
 
