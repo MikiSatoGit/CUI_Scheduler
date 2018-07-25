@@ -890,6 +890,7 @@ if __name__ == '__main__':
 			gp.g_keyword = ""
 			# update status
 			gp.g_json_obj = ChangeStatus("close", new_date, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("progress", "100%", ret_id, **gp.g_json_obj)
 			# write data
 			UpdateDB()
 
