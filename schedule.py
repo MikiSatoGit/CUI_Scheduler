@@ -95,12 +95,15 @@ def UnlockJS():
 	if os.path.exists(gp.g_jslock_path):
 		os.remove(gp.g_jslock_path)
 
-def Initialize():
+def Initialize(db_filename):
 	# read ini
 	config = ConfigParser.SafeConfigParser()
 	if os.path.exists("config.ini"):
 		config.read("./config.ini")
-		gp.g_jsonfile_path = config.get('DATABASE', 'dbfile')
+		if db_filename=="":
+			gp.g_jsonfile_path = config.get('DATABASE', 'dbfile')
+		else:
+			gp.g_jsonfile_path = db_filename
 		gp.g_jsfile_path = config.get('DATABASE', 'jsfile')
 	else:
 		logger.info("[ERROR] Could not find:config.ini. Use default value.")
@@ -701,8 +704,18 @@ def CreateJSTask(datalist):
 #	command = argvs[1]
 
 if __name__ == '__main__':
+
+	argvs = sys.argv
+	argc = len(argvs)
+	db_filename = ""
+	if argc==2 :
+		db_filename = argvs[1]
+	if db_filename != "":
+		if db_filename.find(".json")==-1:
+			db_filename = "./db/" + db_filename + ".json"
+
 	gp = GlobalParameter()
-	Initialize()
+	Initialize(db_filename)
 
 	command = ""
 	isRun = True
@@ -711,6 +724,10 @@ if __name__ == '__main__':
 		command = raw_input(">> ")
 
 		if command=="-h":
+			print "<ARGUMENTS (Option)>"
+			print "# ARG1 : Task DB file name (json)"
+			print "  - Op1 ) Full file path of Task DB file ended in \".json\" -> Use/Create the specified json file."
+			print "  - Op2 ) Task DB name without \".json\" -> Use/Create the specified json file in ./db folder."
 			print "<COMMAND LIST>"
 			print "# -h : show command list"
 			print "# key? : show key of task item"
