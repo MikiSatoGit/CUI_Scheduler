@@ -280,6 +280,7 @@ def CreateNewTask(id, title, type, member, due):
 	# add new element
 	new_data = OrderedDict()
 	new_data = {str(new_ID):new_task}
+	print("--> Create Task ID %s" % str(new_ID))
 	return new_data
 
 def SearchTaskbyID(datalist):
