@@ -95,12 +95,15 @@ def UnlockJS():
 	if os.path.exists(gp.g_jslock_path):
 		os.remove(gp.g_jslock_path)
 
-def Initialize():
+def Initialize(db_filename):
 	# read ini
 	config = ConfigParser.SafeConfigParser()
 	if os.path.exists("config.ini"):
 		config.read("./config.ini")
-		gp.g_jsonfile_path = config.get('DATABASE', 'dbfile')
+		if db_filename=="":
+			gp.g_jsonfile_path = config.get('DATABASE', 'dbfile')
+		else:
+			gp.g_jsonfile_path = db_filename
 		gp.g_jsfile_path = config.get('DATABASE', 'jsfile')
 	else:
 		logger.info("[ERROR] Could not find:config.ini. Use default value.")
@@ -280,6 +283,7 @@ def CreateNewTask(id, title, type, member, due):
 	# add new element
 	new_data = OrderedDict()
 	new_data = {str(new_ID):new_task}
+	print("--> Create Task ID %s" % str(new_ID))
 	return new_data
 
 def SearchTaskbyID(datalist):
@@ -625,12 +629,13 @@ def CreateJSTaskList(datalist):
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
-					ret_txt += "{"
+					ret_txt += "{\n"
 					ret_txt += child_txt_list[i]
+					ret_txt += "}"
 					if i != child_size-1:
-						ret_txt += "},\n"
+						ret_txt += ",\n"
 					else:
-						ret_txt += "}\n"
+						ret_txt += "\n"
 				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 		ret_txt_list.append("},{\n")
@@ -638,6 +643,8 @@ def CreateJSTaskList(datalist):
 	for tmp_txt in ret_txt_list:
 		out_txt += tmp_txt
 	out_txt = out_txt[:out_txt.rfind('},{')]
+	out_txt = out_txt.replace("},\n{\n\"children\"", "\"children\"")
+
 	return out_txt
 
 def subCreateJSTaskList(**datalist):
@@ -655,12 +662,13 @@ def subCreateJSTaskList(**datalist):
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
-					ret_txt += "{"
+					ret_txt += "{\n"
 					ret_txt += child_txt_list[i]
+					ret_txt += "}"
 					if i != child_size-1:
-						ret_txt += "},\n"
+						ret_txt += ",\n"
 					else:
-						ret_txt += "}\n"
+						ret_txt += "\n"
 				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 	return ret_txt_list
@@ -696,8 +704,18 @@ def CreateJSTask(datalist):
 #	command = argvs[1]
 
 if __name__ == '__main__':
+
+	argvs = sys.argv
+	argc = len(argvs)
+	db_filename = ""
+	if argc==2 :
+		db_filename = argvs[1]
+	if db_filename != "":
+		if db_filename.find(".json")==-1:
+			db_filename = "./db/" + db_filename + ".json"
+
 	gp = GlobalParameter()
-	Initialize()
+	Initialize(db_filename)
 
 	command = ""
 	isRun = True
@@ -706,6 +724,10 @@ if __name__ == '__main__':
 		command = raw_input(">> ")
 
 		if command=="-h":
+			print "<ARGUMENTS (Option)>"
+			print "# ARG1 : Task DB file name (json)"
+			print "  - Op1 ) Full file path of Task DB file ended in \".json\" -> Use/Create the specified json file."
+			print "  - Op2 ) Task DB name without \".json\" -> Use/Create the specified json file in ./db folder."
 			print "<COMMAND LIST>"
 			print "# -h : show command list"
 			print "# key? : show key of task item"
@@ -723,7 +745,8 @@ if __name__ == '__main__':
 			print "# member : change member"
 			print "# due : change due date"
 			print "# note : add note in description."
-			print "# chart : create gannt chart"
+			print "# chart : create ganntchart and open in browser"
+			print "# update : update ganntchart"
 			print "# search : search task by keyword"
 			print "# mytask : show tasks for the specified member"
 			print "# delay? : check delayed task"
@@ -884,6 +907,7 @@ if __name__ == '__main__':
 			gp.g_keyword = ""
 			# update status
 			gp.g_json_obj = ChangeStatus("close", new_date, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("progress", "100%", ret_id, **gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -1037,6 +1061,8 @@ if __name__ == '__main__':
 #TEST		gp.g_web_driver.refresh()
 			webbrowser.open("schedule.html", new=1)
 
+		elif command=="update":
+			updateAnyGanttJS(gp.g_json_obj)
 
 		elif command=="test1":
 			LockJS()

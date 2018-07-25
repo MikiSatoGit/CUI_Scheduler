@@ -1,8 +1,43 @@
 # CUI Task Scheduler
 
-last update:07/19/2018
+last update:07/25/2018
 
 This application is for managing tasks by CUI.
+
+---
+#### Configuration
+Task DB file and JavaScript file for Gantt Chart can be specified in "config.ini" respectively in case of shraing Task List with other team members.    
+
+```
+dbfile = ./db/db_schedule.json
+jsfile = ./js/schedule.js
+```
+
+---
+#### How to Run
+Enter the following command from command prompt.
+```
+> python schedule.py
+```
+or
+```
+> schedule.exe
+```
+(Optional)
+Task DB file can be specified by an argument instead of Configuration described in the above section.
+ - Op1 ) Full file path of Task DB file ended in \".json\" -> Use/Create the specified json file.    
+```
+python schedule.py C:\temp\db_schedule_sample.json
+```
+
+_example_
+ - Op2 ) Task DB name without \".json\" -> Use/Create the specified json file in ./db folder.    
+
+_example_
+```
+python schedule.py db_schedule_sample
+```
+
 
 ---
 #### Command List
@@ -14,7 +49,8 @@ This application is for managing tasks by CUI.
 *For Display Items*     
 - list : show title list    
 - all : show all tasks    
-- chart : create gannt chart    
+- chart : create ganntchart and open in browser    
+- update : update ganntchart
 
 *For New Task*    
 - add : add main task    
@@ -65,11 +101,3 @@ Gannt Chart is shown on your browser by "chart" command.
 
 Description of each task can be seen during a mouse over the task name.    
 
----
-#### Configuration
-Task DB file and JavaScript file for Gantt Chart can be specified in "config.ini" respectively in case of shraing Task List with other team members.    
-
-```
-dbfile = ./db/db_schedule.json
-jsfile = ./js/schedule.js
-```
