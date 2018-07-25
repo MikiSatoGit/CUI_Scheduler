@@ -625,12 +625,13 @@ def CreateJSTaskList(datalist):
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
-					ret_txt += "{"
+					ret_txt += "{\n"
 					ret_txt += child_txt_list[i]
+					ret_txt += "}"
 					if i != child_size-1:
-						ret_txt += "},\n"
+						ret_txt += ",\n"
 					else:
-						ret_txt += "}\n"
+						ret_txt += "\n"
 				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 		ret_txt_list.append("},{\n")
@@ -638,6 +639,8 @@ def CreateJSTaskList(datalist):
 	for tmp_txt in ret_txt_list:
 		out_txt += tmp_txt
 	out_txt = out_txt[:out_txt.rfind('},{')]
+	out_txt = out_txt.replace("},\n{\n\"children\"", "\"children\"")
+
 	return out_txt
 
 def subCreateJSTaskList(**datalist):
@@ -655,12 +658,13 @@ def subCreateJSTaskList(**datalist):
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
 				for i in range(0,child_size):
-					ret_txt += "{"
+					ret_txt += "{\n"
 					ret_txt += child_txt_list[i]
+					ret_txt += "}"
 					if i != child_size-1:
-						ret_txt += "},\n"
+						ret_txt += ",\n"
 					else:
-						ret_txt += "}\n"
+						ret_txt += "\n"
 				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
 	return ret_txt_list
@@ -723,7 +727,8 @@ if __name__ == '__main__':
 			print "# member : change member"
 			print "# due : change due date"
 			print "# note : add note in description."
-			print "# chart : create gannt chart"
+			print "# chart : create ganntchart and open in browser"
+			print "# update : update ganntchart"
 			print "# search : search task by keyword"
 			print "# mytask : show tasks for the specified member"
 			print "# delay? : check delayed task"
@@ -1037,6 +1042,8 @@ if __name__ == '__main__':
 #TEST		gp.g_web_driver.refresh()
 			webbrowser.open("schedule.html", new=1)
 
+		elif command=="update":
+			updateAnyGanttJS(gp.g_json_obj)
 
 		elif command=="test1":
 			LockJS()

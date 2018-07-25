@@ -14,7 +14,8 @@ This application is for managing tasks by CUI.
 *For Display Items*     
 - list : show title list    
 - all : show all tasks    
-- chart : create gannt chart    
+- chart : create ganntchart and open in browser    
+- update : update ganntchart
 
 *For New Task*    
 - add : add main task    
