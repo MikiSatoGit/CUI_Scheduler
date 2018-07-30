@@ -109,8 +109,11 @@ def Initialize(db_filename):
 		logger.info("[ERROR] Could not find:config.ini. Use default value.")
 	print("Datalist: %s" % gp.g_jsonfile_path)
 
+	gp.g_jsonfile_path = gp.g_jsonfile_path.replace("\\", "/")
 	gp.g_jsonlock_path = gp.g_jsonfile_path[:gp.g_jsonfile_path.rfind("/")]
 	gp.g_jsonlock_path += "/.lock"
+
+	gp.g_jsfile_path = gp.g_jsfile_path.replace("\\","/")
 	gp.g_jslock_path = gp.g_jsfile_path[:gp.g_jsfile_path.rfind("/")]
 	gp.g_jslock_path += "/.lock"
 	# read data
