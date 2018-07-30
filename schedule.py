@@ -601,6 +601,7 @@ def updateAnyGanttJS(datalist):
 	txt_footer += "var tooltip = dataGrid.tooltip();\n"
 	txt_footer += "tooltip.format(\"{%description}\");\n"
 	txt_footer += "chart.getTimeline().elements().selected().fill('#CCFF99');\n"
+	txt_footer += "var t1 = chart.getTimeline().lineMarker(0).value(\"current\");\n"
 	txt_footer += "chart.container(\'container\');\n"
 	txt_footer += "chart.draw();\n"
 	txt_footer += "chart.fitAll();\n"
