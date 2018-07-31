@@ -69,6 +69,8 @@ chart.rowSelectedFill('#FFFFCC');
 var tooltip = dataGrid.tooltip();
 tooltip.format("{%description}");
 chart.getTimeline().elements().selected().fill('#CCFF99');
+var t1 = chart.getTimeline().lineMarker(0).value("current");
+
 chart.container('container');
 chart.draw();
 chart.fitAll();
