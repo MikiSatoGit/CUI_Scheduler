@@ -132,6 +132,7 @@ def Initialize(db_filename):
 #TEST	gp.g_web_driver.get(gp.g_url)
 
 def ShowTask(datalist):
+	datalist = OrderedDict(datalist)
 	print("----------")
 	print(" id : %s" % ( datalist["id"] ) )
 	print(" title : %s" % ( datalist["title"] ) )
@@ -158,9 +159,10 @@ def ShowTaskList(datalist):
 		print("[%s]" % item["member"])
 
 		if isinstance(datalist[key], dict):
-			subShowTaskList(**datalist[key])
+			datalist[key] = subShowTaskList(datalist[key])
 
-def subShowTaskList(**datalist):
+def subShowTaskList(datalist):
+	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
@@ -170,7 +172,8 @@ def subShowTaskList(**datalist):
 			print("(%s) " % item["id"]),
 			print("%s" % item["title"]),
 			print("[%s]" % item["member"])
-			subShowTaskList(**datalist[key])
+			datalist[key] = subShowTaskList(datalist[key])
+	return datalist
 
 def ShowAllTasks(datalist):
 	datalist = OrderedDict(datalist)
@@ -179,15 +182,17 @@ def ShowAllTasks(datalist):
 			continue
 		ShowTask(datalist[key])
 		if isinstance(datalist[key], dict):
-			subShowAllTasks(**datalist[key])
+			datalist[key] = subShowAllTasks(datalist[key])
 
-def subShowAllTasks(**datalist):
+def subShowAllTasks(datalist):
+	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
 			ShowTask(datalist[key])
-			subShowAllTasks(**datalist[key])
+			datalist[key] = subShowAllTasks(datalist[key])
+	return datalist
 
 def UpdateLatestID(datalist):
 	max_id = 0
@@ -195,7 +200,7 @@ def UpdateLatestID(datalist):
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
-		tmp_id = subUpdateLatestID(**datalist[key])
+		tmp_id, datalist[key] = subUpdateLatestID(datalist[key])
 		if tmp_id > max_id:
 			max_id = tmp_id
 
@@ -205,7 +210,7 @@ def UpdateLatestID(datalist):
 	gp.g_json_file.close()
 	return max_id
 
-def subUpdateLatestID(**datalist):
+def subUpdateLatestID(datalist):
 	max_id = 0
 	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
@@ -215,13 +220,14 @@ def subUpdateLatestID(**datalist):
 			if int(datalist["id"]) > max_id:
 				max_id = int(datalist["id"])
 		if isinstance(datalist[key], dict):
-			tmp_id = subUpdateLatestID(**datalist[key])
+			tmp_id, datalist[key] = subUpdateLatestID(datalist[key])
 			if tmp_id > max_id:
 				max_id = tmp_id
-	return max_id
+	return max_id, datalist
 
 def GetNewID(datalist):
 	LockDB()
+	datalist = OrderedDict(datalist)
 	new_id = gp.g_json_obj["latestID"] + 1 
 	gp.g_json_obj["latestID"] = new_id
 	gp.g_json_file = open(gp.g_jsonfile_path, "w")
@@ -245,27 +251,27 @@ def GetTaskID(taskname, datalist):
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			ret_id = subGetTaskID(**datalist[key])
+			ret_id, datalist[key] = subGetTaskID(datalist[key])
 			if ret_id != 0:
 				break
 	gp.g_keytype = ""
 	gp.g_keyword = ""
 	return str(ret_id)
 
-def subGetTaskID(**datalist):
+def subGetTaskID(datalist):
 	ret_id = 0
 	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			ret_id = subGetTaskID(**datalist[key])
+			ret_id, datalist[key] = subGetTaskID(datalist[key])
 			if ret_id != 0:
 				break
 		elif gp.g_keyword == str(datalist[gp.g_keytype]):
 			ret_id = datalist["id"]
 			break
-	return ret_id
+	return ret_id, datalist
 
 def CreateNewTask(id, title, type, member, due):
 	# create new element
@@ -296,27 +302,27 @@ def SearchTaskbyID(datalist):
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			tmp_id = subSearchTaskbyID(**datalist[key])
+			tmp_id, datalist[key] = subSearchTaskbyID(datalist[key])
 			if len(tmp_id) != 0:
 				ret_id.extend(tmp_id)
 	return ret_id
 
-def subSearchTaskbyID(**datalist):
+def subSearchTaskbyID(datalist):
 	ret_id = []
 	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			tmp_id = subSearchTaskbyID(**datalist[key])
+			tmp_id, datalist[key] = subSearchTaskbyID(datalist[key])
 			if len(tmp_id) != 0:
 				ret_id.extend(tmp_id)
 				ret_id.append(datalist["id"])
 		elif key == "id" and gp.g_keyword == str(datalist[key]):
 			ret_id.append(datalist["id"])
-	return ret_id
+	return ret_id, datalist
 
-def AddSubTask(new_task, task_id_order, **datalist):
+def AddSubTask(new_task, task_id_order, datalist):
 	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
@@ -327,10 +333,10 @@ def AddSubTask(new_task, task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = AddSubTask(new_task, tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = AddSubTask(new_task, tmp_task_id_order, datalist[str(tmp_id)])
 	return datalist
 
-def DeleteTask(task_id_order, **datalist):
+def DeleteTask(task_id_order, datalist):
 	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
@@ -341,7 +347,7 @@ def DeleteTask(task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = DeleteTask(tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = DeleteTask(tmp_task_id_order, datalist[str(tmp_id)])
 	return datalist
 
 def SearchKey(datalist):
@@ -351,19 +357,19 @@ def SearchKey(datalist):
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			tmp_id = subSearchKey(**datalist[key])
+			tmp_id, datalist[key] = subSearchKey(datalist[key])
 			if len(tmp_id) != 0:
 				ret_id.extend(tmp_id)
 	return ret_id
 
-def subSearchKey(**datalist):
+def subSearchKey(datalist):
 	ret_id = []
 	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			tmp_id = subSearchKey(**datalist[key])
+			tmp_id, datalist[key] = subSearchKey(datalist[key])
 			if len(tmp_id) != 0:
 				ret_id.extend(tmp_id)
 		elif gp.g_keytype == "" or key == gp.g_keytype:
@@ -371,9 +377,10 @@ def subSearchKey(**datalist):
 				print("-----[%s] found in [%s]" % (gp.g_keyword, key))
 				ShowTask(datalist)
 				ret_id.append(datalist["id"])
-	return ret_id
+	return ret_id, datalist
 
 def SearchMytask(datalist, member_name):
+	datalist = OrderedDict(datalist)
 	ret_id = []
 	gp.g_keytype = "member"
 	gp.g_keyword = member_name
@@ -387,7 +394,7 @@ def SearchMytask(datalist, member_name):
 	gp.g_keytype = ""
 	gp.g_keyword = ""
 
-def ChangeStatus(new_status, new_date, task_id_order, **datalist):
+def ChangeStatus(new_status, new_date, task_id_order, datalist):
 	datalist = OrderedDict(datalist)
 	# set default date
 	if new_date == "":
@@ -419,10 +426,10 @@ def ChangeStatus(new_status, new_date, task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = ChangeStatus(new_status, new_date, tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = ChangeStatus(new_status, new_date, tmp_task_id_order, datalist[str(tmp_id)])
 	return datalist
 
-def ChangeItem(updating_type, new_data, task_id_order, **datalist):
+def ChangeItem(updating_type, new_data, task_id_order, datalist):
 	datalist = OrderedDict(datalist)
 	depth = len(task_id_order)
 	if depth != 0:
@@ -445,10 +452,10 @@ def ChangeItem(updating_type, new_data, task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = ChangeItem(updating_type, new_data, tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = ChangeItem(updating_type, new_data, tmp_task_id_order, datalist[str(tmp_id)])
 	return datalist
 
-def ChangeNote(new_note, task_id_order, **datalist):
+def ChangeNote(new_note, task_id_order, datalist):
 	datalist = OrderedDict(datalist)
 	# set default date
 	if new_note == "":
@@ -467,7 +474,7 @@ def ChangeNote(new_note, task_id_order, **datalist):
 			return datalist
 		else:
 			tmp_task_id_order.pop()
-			datalist[str(tmp_id)] = ChangeNote(new_note, tmp_task_id_order, **datalist[str(tmp_id)])
+			datalist[str(tmp_id)] = ChangeNote(new_note, tmp_task_id_order, datalist[str(tmp_id)])
 	return datalist
 
 def CheckDelay(today_date, datalist):
@@ -476,16 +483,16 @@ def CheckDelay(today_date, datalist):
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			datalist[key] = subCheckDelay(today_date, **datalist[key])
+			datalist[key] = subCheckDelay(today_date, datalist[key])
 	return datalist
 
-def subCheckDelay(today_date, **datalist):
+def subCheckDelay(today_date, datalist):
 	datalist = OrderedDict(datalist)
 	for key in datalist.keys():
 		if key == "latestID":
 			continue
 		if isinstance(datalist[key], dict):
-			datalist[key] = subCheckDelay(today_date, **datalist[key])
+			datalist[key] = subCheckDelay(today_date, datalist[key])
 		elif key == "due":
 			current_due = datalist[key]
 			if current_due < today_date and datalist["status"]!="close":
@@ -614,6 +621,7 @@ def updateAnyGanttJS(datalist):
 	return
 
 def CreateJSTaskList(datalist):
+	datalist = OrderedDict(datalist)
 	out_txt = ""
 	ret_txt = ""
 	ret_txt_list = []
@@ -628,7 +636,7 @@ def CreateJSTaskList(datalist):
 			if parent_txt != "":
 				ret_txt_list.append(parent_txt)
 
-			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
+			child_txt_list, datalist[key] = copy.deepcopy(subCreateJSTaskList(datalist[key]))
 			child_size = len(child_txt_list)
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
@@ -651,7 +659,8 @@ def CreateJSTaskList(datalist):
 
 	return out_txt
 
-def subCreateJSTaskList(**datalist):
+def subCreateJSTaskList(datalist):
+	datalist = OrderedDict(datalist)
 	ret_txt = ""
 	ret_txt_list = []
 	child_txt_list = []
@@ -661,7 +670,7 @@ def subCreateJSTaskList(**datalist):
 		if isinstance(datalist[key], dict):
 			ret_txt = CreateJSTask(datalist[key])
 			ret_txt_list.append(ret_txt)
-			child_txt_list = copy.deepcopy(subCreateJSTaskList(**datalist[key]))
+			child_txt_list, datalist[key] = copy.deepcopy(subCreateJSTaskList(datalist[key]))
 			child_size = len(child_txt_list)
 			if child_size != 0:
 				ret_txt = "\"children\": [\n"
@@ -675,7 +684,7 @@ def subCreateJSTaskList(**datalist):
 						ret_txt += "\n"
 				ret_txt += "]\n"
 				ret_txt_list.append(ret_txt)
-	return ret_txt_list
+	return ret_txt_list, datalist
 
 def CreateJSTask(datalist):
 	ret_txt = ""
@@ -792,7 +801,7 @@ if __name__ == '__main__':
 
 		elif command=="all":
 			LockDB()
-			ShowAllTasks( gp.g_json_obj)
+			ShowAllTasks(gp.g_json_obj)
 			UnlockDB()
 
 		elif command=="list":
@@ -853,7 +862,7 @@ if __name__ == '__main__':
 			new_ID = GetNewID(gp.g_json_obj)
 			# add new element
 			new_task = CreateNewTask( new_ID, task_name, type_name, member_name, due_date)
-			gp.g_json_obj = AddSubTask(new_task, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = AddSubTask(new_task, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -870,7 +879,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# delete item
-			gp.g_json_obj = DeleteTask(ret_id, **gp.g_json_obj)
+			gp.g_json_obj = DeleteTask(ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -890,7 +899,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update status
-			gp.g_json_obj = ChangeStatus("open", new_date, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeStatus("open", new_date, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -908,10 +917,12 @@ if __name__ == '__main__':
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
-			gp.g_keyword = ""
 			# update status
-			gp.g_json_obj = ChangeStatus("close", new_date, ret_id, **gp.g_json_obj)
-			gp.g_json_obj = ChangeItem("progress", "100%", ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeStatus("close", new_date, ret_id, gp.g_json_obj)
+			gp.g_keyword = task_name
+			ret_id = SearchTaskbyID(gp.g_json_obj)
+			gp.g_keyword = ""
+			gp.g_json_obj = ChangeItem("progress", "100%", ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -929,7 +940,7 @@ if __name__ == '__main__':
 			gp.g_keyword = ""
 			# update status
 			new_date = ""
-			gp.g_json_obj = ChangeStatus("pending", new_date, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeStatus("pending", new_date, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -951,7 +962,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update progress
-			gp.g_json_obj = ChangeItem("progress", new_progress, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("progress", new_progress, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -970,7 +981,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update title
-			gp.g_json_obj = ChangeItem("title", new_task_name, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("title", new_task_name, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -989,7 +1000,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update member
-			gp.g_json_obj = ChangeItem("member", new_member, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("member", new_member, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -1011,7 +1022,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update item
-			gp.g_json_obj = ChangeItem("due", new_date, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeItem("due", new_date, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -1030,7 +1041,7 @@ if __name__ == '__main__':
 			ret_id = SearchTaskbyID(gp.g_json_obj)
 			gp.g_keyword = ""
 			# update description
-			gp.g_json_obj = ChangeNote(note_add, ret_id, **gp.g_json_obj)
+			gp.g_json_obj = ChangeNote(note_add, ret_id, gp.g_json_obj)
 			# write data
 			UpdateDB()
 
@@ -1051,7 +1062,7 @@ if __name__ == '__main__':
 			member_name = raw_input("[mytask] >> ")
 			LockDB()
 			SearchMytask(gp.g_json_obj, member_name)
-			UnockDB()
+			UnlockDB()
 
 		elif command=="delay?":
 			# Check due date
