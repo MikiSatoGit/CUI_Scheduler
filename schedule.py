@@ -388,7 +388,7 @@ def SearchMytask(datalist, member_name):
 	ret_id = SearchKey(datalist)
 
 #TBD	gp.g_keytype = "co-member"
-#TBD	print "----- as co-member"
+#TBD	print("----- as co-member")
 #TBD	ret_id = SearchKey(datalist)
 
 	gp.g_keytype = ""
@@ -739,38 +739,38 @@ if __name__ == '__main__':
 
 	command = ""
 	isRun = True
-	print "Please enter command (-h : command list)"
+	print("Please enter command (-h : command list)")
 	while isRun:
 		command = raw_input(">> ")
 
 		if command=="-h":
-			print "<ARGUMENTS (Option)>"
-			print "# ARG1 : Task DB file name (json)"
-			print "  - Op1 ) Full file path of Task DB file ended in \".json\" -> Use/Create the specified json file."
-			print "  - Op2 ) Task DB name without \".json\" -> Use/Create the specified json file in ./db folder."
-			print "<COMMAND LIST>"
-			print "# -h : show command list"
-			print "# key? : show key of task item"
-			print "# type? : show available types of task"
-			print "# all : show all tasks"
-			print "# list : show title list"
-			print "# add : add main task"
-			print "# sub : add sub task"
-			print "# del : delete task"
-			print "# open : set status as [doing] and set start date"
-			print "# close : set status as [done] and set completion date"
-			print "# pending : set status as [pending]"
-			print "# progress : change progress"
-			print "# title : change title"
-			print "# member : change member"
-			print "# due : change due date"
-			print "# note : add note in description."
-			print "# chart : create ganntchart and open in browser"
-			print "# update : update ganntchart"
-			print "# search : search task by keyword"
-			print "# mytask : show tasks for the specified member"
-			print "# delay? : check delayed task"
-			print "# quit : exit application"
+			print("<ARGUMENTS (Option)>")
+			print("# ARG1 : Task DB file name (json)")
+			print("  - Op1 ) Full file path of Task DB file ended in \".json\" -> Use/Create the specified json file.")
+			print("  - Op2 ) Task DB name without \".json\" -> Use/Create the specified json file in ./db folder.")
+			print("<COMMAND LIST>")
+			print("# -h : show command list")
+			print("# key? : show key of task item")
+			print("# type? : show available types of task")
+			print("# all : show all tasks")
+			print("# list : show title list")
+			print("# add : add main task")
+			print("# sub : add sub task")
+			print("# del : delete task")
+			print("# open : set status as [doing] and set start date")
+			print("# close : set status as [done] and set completion date")
+			print("# pending : set status as [pending]")
+			print("# progress : change progress")
+			print("# title : change title")
+			print("# member : change member")
+			print("# due : change due date")
+			print("# note : add note in description.")
+			print("# chart : create ganntchart and open in browser")
+			print("# update : update ganntchart")
+			print("# search : search task by keyword")
+			print("# mytask : show tasks for the specified member")
+			print("# delay? : check delayed task")
+			print("# quit : exit application")
 
 		if command=="quit" or command=="exit":
 #TEST		gp.g_web_driver.close()
@@ -817,16 +817,16 @@ if __name__ == '__main__':
 			UnlockDB()
 
 		elif command=="add":
-			print "[add] Task name?"
+			print("[add] Task name?")
 			task_name = raw_input("[add] >> ")
-			print "[add] Type?"
+			print("[add] Type?")
 			type_name = raw_input("[add] >> ")
-			print "[add] Whose task?"
+			print("[add] Whose task?")
 			member_name = raw_input("[add] >> ")
-			print "[add] Due date? (YYYY-MM-DD)"
+			print("[add] Due date? (YYYY-MM-DD)")
 			due_date = raw_input("[add] >> ")
 			due_date = due_date.replace("/","-")
-			print "[add] Any description?"
+			print("[add] Any description?")
 			description = raw_input("[add] >> ")
 			# Create New ID
 			new_ID = GetNewID(gp.g_json_obj)
@@ -837,21 +837,21 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="sub":
-			print "[sub] Parent task name?"
+			print("[sub] Parent task name?")
 			parent_task_name = raw_input("[sub] >> ")
 			parent_task_name = GetTaskID(parent_task_name, gp.g_json_obj)
 			print("->Parent Task ID: %s" % parent_task_name)
 			if parent_task_name == str(0):
 				print("Parent task does not exist.")
 				continue
-			print "[sub] Sub task name?"
+			print("[sub] Sub task name?")
 			task_name = raw_input("[sub] >> ")
-			print "[sub] Whose task?"
+			print("[sub] Whose task?")
 			member_name = raw_input("[sub] >> ")
-			print "[sub] Due date? (YYYY-MM-DD)"
+			print("[sub] Due date? (YYYY-MM-DD)")
 			due_date = raw_input("[sub] >> ")
 			due_date = due_date.replace("/","-")
-			print "[sub] Any description?"
+			print("[sub] Any description?")
 			description = raw_input("[sub] >> ")
 			# check Task ID layer
 			gp.g_keyword = parent_task_name
@@ -874,7 +874,7 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="del":
-			print "[del] Task name?"
+			print("[del] Task name?")
 			task_name = raw_input("[del] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
@@ -891,14 +891,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="open":
-			print "[open] Task name?"
+			print("[open] Task name?")
 			task_name = raw_input("[open] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[open] Date? (YYYY-MM-DD default:today)"
+			print("[open] Date? (YYYY-MM-DD default:today)")
 			new_date = raw_input("[open] >> ")
 			new_date = new_date.replace("/","-")
 			# check Task ID layer
@@ -911,14 +911,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="close":
-			print "[close] Task name?"
+			print("[close] Task name?")
 			task_name = raw_input("[close] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[close] Date? (YYYY-MM-DD default:today)"
+			print("[close] Date? (YYYY-MM-DD default:today)")
 			new_date = raw_input("[close] >> ")
 			new_date = new_date.replace("/","-")
 			# check Task ID layer
@@ -934,7 +934,7 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="pending":
-			print "[pending] Task name?"
+			print("[pending] Task name?")
 			task_name = raw_input("[pending] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
@@ -952,18 +952,18 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="progress":
-			print "[progress] Task name?"
+			print("[progress] Task name?")
 			task_name = raw_input("[progress] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[progress] Progress [%] ?"
+			print("[progress] Progress [%] ?")
 			new_progress = raw_input("[progress] >> ")
 			new_progress = new_progress.replace("%","")
 			new_progress = new_progress + "%"
-			print new_progress
+			print(new_progress)
 			# check Task ID layer
 			gp.g_keyword = task_name
 			ret_id = SearchTaskbyID(gp.g_json_obj)
@@ -974,14 +974,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="title":
-			print "[title] Current task name?"
+			print("[title] Current task name?")
 			task_name = raw_input("[title] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[title] New task name?"
+			print("[title] New task name?")
 			new_task_name = raw_input("[title] >> ")
 			# check Task ID layer
 			gp.g_keyword = task_name
@@ -993,14 +993,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="member":
-			print "[member] Task name?"
+			print("[member] Task name?")
 			task_name = raw_input("[member] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[member] Who?"
+			print("[member] Who?")
 			new_member = raw_input("[member] >> ")
 			# check Task ID layer
 			gp.g_keyword = task_name
@@ -1012,14 +1012,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="due":
-			print "[due] Task name?"
+			print("[due] Task name?")
 			task_name = raw_input("[due] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[due] Date? (YYYY-MM-DD)"
+			print("[due] Date? (YYYY-MM-DD)")
 			new_date = raw_input("[due] >> ")
 			new_date = new_date.replace("/","-")
 			if new_date == "":
@@ -1034,14 +1034,14 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="note":
-			print "[note] Task name?"
+			print("[note] Task name?")
 			task_name = raw_input("[note] >> ")
 			task_name = GetTaskID(task_name, gp.g_json_obj)
 			print("->Task ID: %s" % task_name)
 			if task_name == str(0):
 				print("Task does not exist.")
 				continue
-			print "[note] Description?"
+			print("[note] Description?")
 			note_add = raw_input("[note] >> ")
 			# check Task ID layer
 			gp.g_keyword = task_name
@@ -1053,9 +1053,9 @@ if __name__ == '__main__':
 			UpdateDB()
 
 		elif command=="search":
-			print "[search] Keytype?"
+			print("[search] Keytype?")
 			gp.g_keytype = raw_input("[search] >> ")
-			print "[search] Keyword?"
+			print("[search] Keyword?")
 			gp.g_keyword = raw_input("[search] >> ")
 			# search item
 			LockDB()
@@ -1065,7 +1065,7 @@ if __name__ == '__main__':
 			gp.g_keyword = ""
 
 		elif command=="mytask":
-			print "[mytask] Member name?"
+			print("[mytask] Member name?")
 			member_name = raw_input("[mytask] >> ")
 			LockDB()
 			SearchMytask(gp.g_json_obj, member_name)
