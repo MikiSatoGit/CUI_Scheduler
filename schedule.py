@@ -604,9 +604,13 @@ def updateAnyGanttJS(datalist):
 	txt_footer += "forthColumn.labels().hAlign(\"left\");\n"
 	txt_footer += "forthColumn.title(\"Member\");\n"
 	txt_footer += "forthColumn.labels().format(\"{%member}\");\n"
-	txt_footer += "chart.rowSelectedFill('#FFFFCC');\n"
+	txt_footer += "var fifthColumn = dataGrid.column(4);\n"
+	txt_footer += "fifthColumn.labels().hAlign(\"left\");\n"
+	txt_footer += "fifthColumn.title(\"status\");\n"
+	txt_footer += "var hoge = fifthColumn.labels().format(\"{%status}\");\n"
 	txt_footer += "var tooltip = dataGrid.tooltip();\n"
 	txt_footer += "tooltip.format(\"{%description}\");\n"
+	txt_footer += "chart.rowSelectedFill('#FFFFCC');\n"
 	txt_footer += "chart.getTimeline().elements().selected().fill('#CCFF99');\n"
 	txt_footer += "var t1 = chart.getTimeline().lineMarker(0).value(\"current\");\n"
 	txt_footer += "chart.container(\'container\');\n"
@@ -702,8 +706,9 @@ def CreateJSTask(datalist):
 		ret_txt += "    \"progressValue\": \"" + datalist["progress"] + "\",\n"
 	desc_txt = "    \"description\": \"" + datalist["description"]
 	desc_txt = desc_txt.replace("\n", "\\n")
-	desc_txt += "\"\n"
+	desc_txt += "\",\n"
 	ret_txt += desc_txt
+	ret_txt += "    \"status\": \"" + datalist["status"] + "\"\n"
 	ret_txt += " },\n"
 	return ret_txt
 
